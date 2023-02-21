@@ -1,0 +1,295 @@
+import openai
+import speech_recognition as sr
+from gtts import gTTS
+import playsound
+
+# Set up OpenAI API credentials
+openai.api_key = "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"
+
+# Set up the speech recognizer
+r = sr.Recognizer()
+
+def text_to_speech(text, filename="output.mp3"):
+    """
+    Converts text to speech and saves the output as an mp3 file.
+    """
+    tts = gTTS(text=text, lang="en")
+    tts.save(filename)
+
+def play_audio(filename):
+    """
+    Plays the specified audio file.
+    """
+    playsound.playsound(filename)
+
+def speech_to_text():
+    """
+    Listens for speech input and returns the text transcription.
+    """
+    with sr.Microphone() as source:
+        r.adjust_for_ambient_noise(source)
+        print("Listening...")
+        audio = r.listen(source, phrase_time_limit=3)
+
+        try:
+            text = r.recognize_google(audio)
+            print(f"You said: {text}")
+            return text
+        except sr.UnknownValueError:
+            print("Could not understand audio")
+        except sr.RequestError as e:
+            print(f"Could not request results from Google Speech Recognition service; {e}")
+
+# Generate response using OpenAI GPT-3
+def get_response(prompt):
+    response = openai.Completion.create(
+        engine="text-davinci-002",
+        prompt=prompt,
+        max_tokens=200,
+        n=1,
+        stop=None,
+        temperature=0.7,
+    )
+    return response.choices[0].text.strip()
+
+# Define the wake words
+wake_words = ["hi leo", "hey leo", "hello", "listen", "leo"]
+
+end = False
+
+# Define the conversation loop
+while True:
+    # Listen for the wake words
+    print("Waiting for wake word...")
+    text = speech_to_text()
+    if text is None: continue
+    text = text.lower()
+    if any(wake_word in text for wake_word in wake_words):
+        print("Wake word detected!")
+        response = "How can I help you?"
+
+        # Keep the conversation going until the user says "stop"
+        while True:
+            print(response)
+            text_to_speech(response, "response.mp3")
+            play_audio("response.mp3")
+
+            # Listen for the user's response
+            user_input = speech_to_text()
+            if user_input is None: continue
+            user_input = user_input.lower()
+
+            # Exit the conversation loop if the user says "stop" or "bye"
+            if "stop" in user_input or "bye" in user_input:
+                print("Bye!")
+                end = True
+                break
+
+            # Generate a response with ChatGPT
+            # prompt = f"Conversation:\nUser: {user_input}\nPeter:"
+            response = get_response(user_input)
+        
+        if end: break
+
+    else:
+        print("Could not detect wake word. Listening again...")
+
+
+
+
+# import speech_recognition as sr
+# import openai
+
+# # Set up OpenAI API key
+# openai.api_key = "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"
+
+# # Set up speech recognition
+# r = sr.Recognizer()
+
+# # Set up wake call phrases
+# wake_calls = ["hey peter", "hi peter", "hello", "listen"]
+
+# # Set up conversation flag
+# in_conversation = False
+
+# # Process speech input
+# def process_input():
+#     with sr.Microphone() as source:
+#         print("Listening...")
+#         audio = r.listen(source, timeout=3)
+#     try:
+#         text = r.recognize_google(audio)
+#         print(f"You said: {text}")
+#         if any(wake_call in text.lower() for wake_call in wake_calls):
+#             return True
+#         else:
+#             return False
+#     except:
+#         print("Sorry, I didn't catch that.")
+#         return False
+
+# # Generate response using OpenAI GPT-3
+# def get_response(prompt):
+#     response = openai.Completion.create(
+#         engine="davinci",
+#         prompt=prompt,
+#         max_tokens=60,
+#         n=1,
+#         stop=None,
+#         temperature=0.7,
+#     )
+#     return response.choices[0].text.strip()
+
+# # Main loop
+# while True:
+#     if not in_conversation:
+#         if process_input():
+#             in_conversation = True
+#             print("How can I help you?")
+#     else:
+#         command = input("> ")
+#         response = get_response(command)
+#         print(f"Peter: {response}")
+#         if "bye" in command.lower() or "exit" in command.lower():
+#             in_conversation = False
+#             print("Goodbye!")
+#             continue
+
+
+
+
+# import openai
+# import speech_recognition as sr
+# import pyttsx3
+
+# # Set up OpenAI API key
+# openai.api_key = "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"
+
+# # Set up text-to-speech engine
+# engine = pyttsx3.init()
+
+# # Define function to generate response from ChatGPT model
+# def generate_response(prompt):
+#     response = openai.Completion.create(
+#         engine="davinci",
+#         prompt=prompt,
+#         max_tokens=1024,
+#         n=1,
+#         stop=None,
+#         temperature=0.5,
+#     )
+#     message = response.choices[0].text.strip()
+#     return message
+
+# # Define function to process user input and generate response
+# def process_input(user_input):
+#     prompt = "The following is a conversation with Peter, a personal assistant powered by ChatGPT.\n\nUser: " + user_input + "\nPeter:"
+#     response = generate_response(prompt)
+#     return response
+
+# # Define function to listen for "Hey Peter" and process user input
+# def listen():
+#     r = sr.Recognizer()
+#     with sr.Microphone() as source:
+#         print("Listening...")
+#         audio = r.listen(source)
+#     try:
+#         user_input = r.recognize_google(audio)
+#         wake_calls = ['hey peter', 'hello', 'listen']
+#         if any(c in user_input.lower() for c in wake_calls):
+#             user_input = user_input.lower().replace("hey peter", "").strip()
+#             response = process_input(user_input)
+#             print("Peter: " + response)
+#             engine.say(response)
+#             engine.runAndWait()
+#     except sr.UnknownValueError:
+#         print("Could not understand audio")
+#     except sr.RequestError as e:
+#         print("Could not request results from Google Speech Recognition service; {0}".format(e))
+
+# # Listen for user input indefinitely
+# while True:
+#     listen()
+
+
+
+# import speech_recognition as sr
+# from transformers import pipeline
+# import pyttsx3
+# import requests
+# import pyaudio
+
+# # Define the wake word to activate the personal assistant
+# WAKE_WORD = "hey peter"
+
+# # Define the authentication token for third-party API access
+# API_AUTH_TOKEN = "YOUR_API_AUTH_TOKEN"
+
+# # Define the URL for the third-party API
+# API_URL = "https://api.example.com/"
+
+# # Initialize the speech recognition and text-to-speech engines
+# r = sr.Recognizer()
+# engine = pyttsx3.init()
+
+# # Initialize the pipeline for text generation using GPT-2
+# generator = pipeline('text-generation', model='gpt2')
+
+# # Define a function to generate a text response from the user's input
+# def generate_response(input_text):
+#     response = generator(input_text, max_length=50, do_sample=True)
+#     response_text = response[0]['generated_text']
+#     return response_text
+
+# # Define a function to authenticate the user with a third-party service
+# def authenticate_user():
+#     headers = {'Authorization': 'Bearer ' + API_AUTH_TOKEN}
+#     response = requests.get(API_URL + '/authenticate', headers=headers)
+
+#     if response.status_code == 200:
+#         print("User authenticated successfully.")
+#         return True
+#     else:
+#         print("Unable to authenticate user. Error code: ", response.status_code)
+#         return False
+
+# # Define a function to access a third-party API and perform an action
+# def perform_action():
+#     headers = {'Authorization': 'Bearer ' + API_AUTH_TOKEN}
+#     response = requests.post(API_URL + '/perform-action', headers=headers)
+
+#     if response.status_code == 200:
+#         print("Action performed successfully.")
+#     else:
+#         print("Unable to perform action. Error code: ", response.status_code)
+
+# # Define a function to activate the personal assistant
+# def activate_personal_assistant():
+#     with sr.Microphone() as source:
+#         print("Listening...")
+#         audio = r.listen(source)
+
+#         try:
+#             input_text = r.recognize_google(audio)
+#             print("Input text: ", input_text)
+
+#             if WAKE_WORD in input_text.lower():
+#                 if authenticate_user():
+#                     response_text = generate_response(input_text)
+#                     print("Response text: ", response_text)
+#                     engine.say(response_text)
+#                     engine.runAndWait()
+#                     perform_action()
+
+#         except sr.UnknownValueError:
+#             print("Sorry, I didn't get that.")
+
+#         except sr.RequestError as e:
+#             print("Sorry, I'm unable to access the Google Speech Recognition API. {0}".format(e))
+
+#         except Exception as e:
+#             print("Sorry, an error occurred: ", e)
+
+# # Run the app
+# while True:
+#     activate_personal_assistant()
